@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "2026 FIFA World Cup Simulation"
+version = "1.0.0"
+id = "artifacts/worldcup"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24152
+
+[services.development]
+run = "pnpm --filter @workspace/worldcup run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/worldcup", "run", "build" ]
+publicDir = "artifacts/worldcup/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24152"
+BASE_PATH = "/"
