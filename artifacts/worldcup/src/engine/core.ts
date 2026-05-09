@@ -10,6 +10,9 @@ const WEIGHTS = {
 const _fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
 function factorial(n: number): number { return _fact[n] ?? 40320; }
 
+let _rng: () => number = Math.random;
+export function setRng(fn: () => number) { _rng = fn; }
+
 export function eloWinProb(ratingA: number, ratingB: number): number {
   return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
@@ -54,7 +57,7 @@ function sampleScoreline(mu: number, nu: number): [number, number] {
   }
 
   let cumulative = 0;
-  const r = Math.random() * total;
+  const r = _rng() * total;
   for (const { i, j, p } of probs) {
     cumulative += p;
     if (r <= cumulative) return [i, j];
@@ -210,7 +213,7 @@ export function simulateMatch(
   }
 
   const pPen = 0.5 + (eloWinProb(teamA.eloRating, teamB.eloRating) - 0.5) * 0.15;
-  const penWinnerIsA = Math.random() < pPen;
+  const penWinnerIsA = _rng() < pPen;
   return buildResult(
     context.matchId, teamA, teamB, totalA, totalB,
     true, true, mu, nu, context.climate,

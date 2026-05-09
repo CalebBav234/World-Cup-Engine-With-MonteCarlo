@@ -130,6 +130,164 @@ export function MonteCarloPanel({ autoRun }: { autoRun?: boolean }) {
             <h3 className="section-subtitle">Consensus Bracket</h3>
             <ConsensusBracket source="montecarlo" data={consensusForBracket} />
           </div>
+
+          {/* ── Trophy Odds ── */}
+          <div className="mc-section">
+            <h3 className="section-subtitle">Trophy Odds — Top 16 Teams</h3>
+            <p className="mc-chart-desc">Championship probability across 10,000 simulations.</p>
+            <div className="mc-trophy-bars">
+              {(() => {
+                const maxTrophy = output.pathConfidence.reduce((m, r) => Math.max(m, r.trophy), 0);
+                return [...output.pathConfidence]
+                .sort((a, b) => b.trophy - a.trophy)
+                .slice(0, 16)
+                .map(row => {
+                  const team = TEAMS.find(t => t.id === row.teamId);
+                  return (
+                    <div key={row.teamId} className="mc-bar-row">
+                      <span className="mc-bar-label">{team?.name ?? row.teamId}</span>
+                      <div className="mc-bar-track">
+                        <div
+                          className="mc-bar-fill trophy-fill"
+                          style={{ width: `${maxTrophy > 0 ? (row.trophy / maxTrophy) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="mc-bar-val">{row.trophy.toFixed(1)}%</span>
+                    </div>
+                  );
+                })})()}
+            </div>
+          </div>
+
+          {/* ── QF Contenders ── */}
+          <div className="mc-section">
+            <h3 className="section-subtitle">QF Contenders — Full Field</h3>
+            <p className="mc-chart-desc">Quarter-final probability, showing all teams with QF% &gt; 30%.</p>
+            <div className="mc-trophy-bars">
+              {[...output.pathConfidence]
+                .filter(r => r.qf >= 30)
+                .sort((a, b) => b.qf - a.qf)
+                .map(row => {
+                  const team = TEAMS.find(t => t.id === row.teamId);
+                  return (
+                    <div key={row.teamId} className="mc-bar-row">
+                      <span className="mc-bar-label">{team?.name ?? row.teamId}</span>
+                      <div className="mc-bar-track">
+                        <div
+                          className="mc-bar-fill qf-fill"
+                          style={{ width: `${row.qf}%` }}
+                        />
+                      </div>
+                      <span className="mc-bar-val">{row.qf.toFixed(1)}%</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* ── Confederation Breakdown ── */}
+          <div className="mc-section">
+            <h3 className="section-subtitle">Confederation Breakdown</h3>
+            <p className="mc-chart-desc">Combined trophy probability and average QF rate per confederation.</p>
+            <div className="mc-confed-table-wrap">
+              <table className="mc-confed-table">
+                <thead>
+                  <tr>
+                    <th>Confederation</th>
+                    <th>Teams</th>
+                    <th>Combined Win %</th>
+                    <th>Best Team</th>
+                    <th>Avg QF %</th>
+                    <th>Avg R16 %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(['UEFA','CONMEBOL','CONCACAF','CAF','AFC','OFC'] as const).map(conf => {
+                    const confTeams = TEAMS.filter(t => t.confederation === conf);
+                    const confRows = output.pathConfidence.filter(r =>
+                      confTeams.some(t => t.id === r.teamId)
+                    );
+                    const totalWin = confRows.reduce((s, r) => s + r.trophy, 0);
+                    const avgQF   = confRows.length ? confRows.reduce((s, r) => s + r.qf,  0) / confRows.length : 0;
+                    const avgR16  = confRows.length ? confRows.reduce((s, r) => s + r.r16, 0) / confRows.length : 0;
+                    const best    = [...confRows].sort((a, b) => b.trophy - a.trophy)[0];
+                    const bestTeam = TEAMS.find(t => t.id === best?.teamId);
+                    return (
+                      <tr key={conf} className="mc-confed-row">
+                        <td className="mc-confed-name">{conf}</td>
+                        <td>{confTeams.length}</td>
+                        <td>
+                          <div className="mc-confed-bar-wrap">
+                            <div className="mc-confed-bar" style={{ width: `${Math.min(totalWin, 100)}%` }} />
+                            <span>{totalWin.toFixed(1)}%</span>
+                          </div>
+                        </td>
+                        <td>{bestTeam?.name ?? '—'} <span className="mc-best-val">({best?.trophy.toFixed(1) ?? 0}%)</span></td>
+                        <td>{avgQF.toFixed(1)}%</td>
+                        <td>{avgR16.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Dark Horses ── */}
+          <div className="mc-section">
+            <h3 className="section-subtitle">Dark Horses — Overperformers</h3>
+            <p className="mc-chart-desc">Teams with FIFA rank outside top 20 but QF probability above 30%.</p>
+            <div className="mc-dark-horses">
+              {[...output.pathConfidence]
+                .filter(r => {
+                  const t = TEAMS.find(t => t.id === r.teamId);
+                  return t && t.fifaRanking > 20 && r.qf >= 30;
+                })
+                .sort((a, b) => b.qf - a.qf)
+                .map(row => {
+                  const team = TEAMS.find(t => t.id === row.teamId)!;
+                  const expected = Math.max(0, 60 - team.fifaRanking * 1.1);
+                  const overPerf = row.qf - expected;
+                  return (
+                    <div key={row.teamId} className="dh-card">
+                      <div className="dh-header">
+                        <span className="dh-name">{team.name}</span>
+                        <span className="dh-rank">Ranked #{team.fifaRanking}</span>
+                      </div>
+                      <div className="dh-stats">
+                        <div className="dh-stat">
+                          <span className="dh-stat-label">QF%</span>
+                          <span className="dh-stat-val">{row.qf.toFixed(1)}%</span>
+                        </div>
+                        <div className="dh-stat">
+                          <span className="dh-stat-label">SF%</span>
+                          <span className="dh-stat-val">{row.sf.toFixed(1)}%</span>
+                        </div>
+                        <div className="dh-stat">
+                          <span className="dh-stat-label">Overperf.</span>
+                          <span className="dh-stat-val over">{overPerf > 0 ? '+' : ''}{overPerf.toFixed(1)}%</span>
+                        </div>
+                        <div className="dh-stat">
+                          <span className="dh-stat-label">Win%</span>
+                          <span className="dh-stat-val">{row.trophy.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="dh-bar-row">
+                        <div className="dh-bar-track">
+                          <div className="dh-bar-fill" style={{ width: `${row.qf}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              {output.pathConfidence.filter(r => {
+                const t = TEAMS.find(t => t.id === r.teamId);
+                return t && t.fifaRanking > 20 && r.qf >= 30;
+              }).length === 0 && (
+                <p className="mc-empty">No dark horses exceeded 30% QF probability in this run.</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

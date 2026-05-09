@@ -1,8 +1,11 @@
-import { runFullTournament } from '../engine/core';
+import { runFullTournament, setRng } from '../engine/core';
 import { TEAMS, GROUP_DRAW } from '../engine/teamData';
 import type { Stage, MonteCarloOutput } from '../engine/types';
+import { mulberry32, randomSeed } from '../engine/rng';
 
-self.onmessage = () => {
+self.onmessage = (e: MessageEvent<{ seed?: number } | null>) => {
+  const seed = e.data?.seed ?? randomSeed();
+  setRng(mulberry32(seed));
   const N = 10_000;
   const STAGES: Stage[] = ['r32','r16','qf','sf','final','trophy'];
 

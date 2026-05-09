@@ -1,6 +1,7 @@
-import { runFullTournament } from '../engine/core';
+import { runFullTournament, setRng } from '../engine/core';
 import { TEAMS, GROUP_DRAW } from '../engine/teamData';
 import type { NarrativeResult, TournamentResult } from '../engine/types';
+import { mulberry32, randomSeed } from '../engine/rng';
 
 const PER_RUN_CONFIG = {
   A: { forcedGroupExit: 'BEL', starOut: { player: 'Mbappe',       teamId: 'FRA', reason: 'injury'     as const } },
@@ -88,7 +89,9 @@ function applyNarrativeOverlays(
   };
 }
 
-self.onmessage = () => {
+self.onmessage = (e: MessageEvent<{ seed?: number } | null>) => {
+  const seed = e.data?.seed ?? randomSeed();
+  setRng(mulberry32(seed));
   const results: NarrativeResult[] = [];
 
   for (const simId of ['A','B','C','D'] as SimId[]) {

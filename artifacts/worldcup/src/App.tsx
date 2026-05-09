@@ -5,9 +5,11 @@ import { MonteCarloPanel } from './components/MonteCarloPanel';
 import { ConsensusBracket } from './components/ConsensusBracket';
 import { HistoryPanel } from './components/HistoryPanel';
 import type { HistoryEntry } from './components/HistoryPanel';
+import { ConsensusTab } from './components/ConsensusTab';
+import { randomSeed } from './engine/rng';
 
 type SimId = 'A' | 'B' | 'C' | 'D';
-type TabId = 'A' | 'B' | 'C' | 'D' | 'montecarlo' | 'history';
+type TabId = 'A' | 'B' | 'C' | 'D' | 'montecarlo' | 'history' | 'consensus';
 
 interface SimState {
   A: NarrativeResult | null;
@@ -76,7 +78,7 @@ function MatchCard({ match }: { match: MatchResult }) {
   );
 }
 
-function NarrativeTab({ result, simId }: { result: NarrativeResult | null; simId: SimId }) {
+function NarrativeTab({ result, simId, onRerun }: { result: NarrativeResult | null; simId: SimId; onRerun?: () => void }) {
   if (!result) {
     return (
       <div className="sim-loading">
@@ -103,7 +105,14 @@ function NarrativeTab({ result, simId }: { result: NarrativeResult | null; simId
     <div className="narrative-tab">
       {/* Hero */}
       <div className="sim-hero">
-        <div className="sim-hero-badge">Simulation {simId}</div>
+        <div className="sim-hero-top-row">
+          <div className="sim-hero-badge">Simulation {simId}</div>
+          {onRerun && (
+            <button className="narrative-rerun-btn" onClick={onRerun} title="Re-run all simulations">
+              ↺ Re-run
+            </button>
+          )}
+        </div>
         <div className="sim-champion-wrap">
           <span className="sim-champion-label">Champion</span>
           <span className="sim-champion">{teamName(result.champion)}</span>
@@ -200,11 +209,14 @@ export default function App() {
   const [runId, setRunId] = useState(0);
   const [isRerunning, setIsRerunning] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [seed, setSeed] = useState<string>('');
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
     setSims({ A: null, B: null, C: null, D: null });
     setSimError(null);
+
+    const parsedSeed = seed.trim() !== '' ? parseInt(seed, 10) : randomSeed();
 
     const worker = new Worker(
       new URL('./workers/narrativeWorker.ts', import.meta.url),
@@ -243,7 +255,7 @@ export default function App() {
       setIsRerunning(false);
     };
 
-    worker.postMessage(null);
+    worker.postMessage({ seed: parsedSeed });
 
     return () => {
       worker.terminate();
@@ -257,6 +269,8 @@ export default function App() {
     setRunId(prev => prev + 1);
   }
 
+  const completedCount = ['A','B','C','D'].filter(s => sims[s as SimId] !== null).length;
+  const allSimsDone = completedCount === 4;
   const historyCount = Math.ceil(history.length / 4);
 
   const tabs: Array<{ id: TabId; label: string }> = [
@@ -264,11 +278,10 @@ export default function App() {
     { id: 'B', label: 'Sim B' },
     { id: 'C', label: 'Sim C' },
     { id: 'D', label: 'Sim D' },
+    ...(allSimsDone ? [{ id: 'consensus' as TabId, label: '⚡ Consensus' }] : []),
     { id: 'montecarlo', label: 'Monte Carlo' },
     { id: 'history', label: historyCount > 0 ? `History (${historyCount})` : 'History' },
   ];
-
-  const completedCount = ['A','B','C','D'].filter(s => sims[s as SimId] !== null).length;
 
   return (
     <div className="app">
@@ -290,11 +303,23 @@ export default function App() {
               <span className="engine-dot" />
               Monte Carlo · 10k iterations
             </div>
+            <div className="seed-wrap">
+              <label className="seed-label">Seed</label>
+              <input
+                type="number"
+                className="seed-input"
+                placeholder="random"
+                value={seed}
+                onChange={e => setSeed(e.target.value)}
+                disabled={isRerunning}
+                title="Enter a seed number for reproducible results, or leave blank for random"
+              />
+            </div>
             <button
               className={`rerun-btn ${isRerunning ? 'rerunning' : ''}`}
               onClick={handleRerun}
               disabled={isRerunning}
-              title="Re-run all simulations with new random seeds"
+              title="Re-run all simulations"
             >
               {isRerunning ? (
                 <>
@@ -336,10 +361,13 @@ export default function App() {
           <MonteCarloPanel key={runId} autoRun />
         ) : activeTab === 'history' ? (
           <HistoryPanel history={history} />
+        ) : activeTab === 'consensus' && allSimsDone ? (
+          <ConsensusTab sims={sims as Record<SimId, NarrativeResult>} />
         ) : (
           <NarrativeTab
             result={sims[activeTab as SimId]}
             simId={activeTab as SimId}
+            onRerun={handleRerun}
           />
         )}
       </main>
