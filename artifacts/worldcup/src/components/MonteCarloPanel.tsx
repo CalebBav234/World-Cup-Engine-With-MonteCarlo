@@ -1,15 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { MonteCarloOutput } from '../engine/types';
 import { ProbabilityHeatmap } from './ProbabilityHeatmap';
 import { ConsensusBracket } from './ConsensusBracket';
 import { TEAMS } from '../engine/teamData';
 
-export function MonteCarloPanel() {
+export function MonteCarloPanel({ autoRun }: { autoRun?: boolean }) {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [output, setOutput] = useState<MonteCarloOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (autoRun) runMonteCarlo();
+    return () => { workerRef.current?.terminate(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function runMonteCarlo() {
     if (running) return;

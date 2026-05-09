@@ -195,9 +195,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('A');
   const [sims, setSims] = useState<SimState>({ A: null, B: null, C: null, D: null });
   const [simError, setSimError] = useState<string | null>(null);
+  const [runId, setRunId] = useState(0);
+  const [isRerunning, setIsRerunning] = useState(false);
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
+    setSims({ A: null, B: null, C: null, D: null });
+    setSimError(null);
+
     const worker = new Worker(
       new URL('./workers/narrativeWorker.ts', import.meta.url),
       { type: 'module' }
@@ -208,14 +213,21 @@ export default function App() {
       const msg = e.data;
       if (msg.type === 'sim_complete') {
         const simId = msg.simId as SimId;
-        setSims(prev => ({ ...prev, [simId]: msg.result }));
+        setSims(prev => {
+          const next = { ...prev, [simId]: msg.result };
+          const allDone = (['A','B','C','D'] as SimId[]).every(s => next[s] !== null);
+          if (allDone) setIsRerunning(false);
+          return next;
+        });
       } else if (msg.type === 'error') {
         setSimError(`Sim ${msg.simId}: ${msg.message}`);
+        setIsRerunning(false);
       }
     };
 
     worker.onerror = (err) => {
       setSimError(err.message);
+      setIsRerunning(false);
     };
 
     worker.postMessage(null);
@@ -223,7 +235,14 @@ export default function App() {
     return () => {
       worker.terminate();
     };
-  }, []);
+  }, [runId]);
+
+  function handleRerun() {
+    workerRef.current?.terminate();
+    setIsRerunning(true);
+    setActiveTab('A');
+    setRunId(prev => prev + 1);
+  }
 
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: 'A', label: 'Sim A' },
@@ -255,6 +274,24 @@ export default function App() {
               <span className="engine-dot" />
               Monte Carlo · 10k iterations
             </div>
+            <button
+              className={`rerun-btn ${isRerunning ? 'rerunning' : ''}`}
+              onClick={handleRerun}
+              disabled={isRerunning}
+              title="Re-run all simulations with new random seeds"
+            >
+              {isRerunning ? (
+                <>
+                  <span className="rerun-spinner" />
+                  Running…
+                </>
+              ) : (
+                <>
+                  <span className="rerun-icon">↺</span>
+                  Re-run
+                </>
+              )}
+            </button>
           </div>
         </div>
       </header>
@@ -280,7 +317,7 @@ export default function App() {
 
       <main className="app-main">
         {activeTab === 'montecarlo' ? (
-          <MonteCarloPanel />
+          <MonteCarloPanel key={runId} autoRun />
         ) : (
           <NarrativeTab
             result={sims[activeTab as SimId]}
