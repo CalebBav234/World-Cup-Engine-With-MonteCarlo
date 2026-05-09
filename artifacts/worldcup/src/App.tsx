@@ -3,9 +3,11 @@ import type { NarrativeResult, GroupRow, MatchResult } from './engine/types';
 import { TEAMS } from './engine/teamData';
 import { MonteCarloPanel } from './components/MonteCarloPanel';
 import { ConsensusBracket } from './components/ConsensusBracket';
+import { HistoryPanel } from './components/HistoryPanel';
+import type { HistoryEntry } from './components/HistoryPanel';
 
 type SimId = 'A' | 'B' | 'C' | 'D';
-type TabId = 'A' | 'B' | 'C' | 'D' | 'montecarlo';
+type TabId = 'A' | 'B' | 'C' | 'D' | 'montecarlo' | 'history';
 
 interface SimState {
   A: NarrativeResult | null;
@@ -197,6 +199,7 @@ export default function App() {
   const [simError, setSimError] = useState<string | null>(null);
   const [runId, setRunId] = useState(0);
   const [isRerunning, setIsRerunning] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
@@ -216,7 +219,17 @@ export default function App() {
         setSims(prev => {
           const next = { ...prev, [simId]: msg.result };
           const allDone = (['A','B','C','D'] as SimId[]).every(s => next[s] !== null);
-          if (allDone) setIsRerunning(false);
+          if (allDone) {
+            setIsRerunning(false);
+            setHistory(h => [
+              ...h,
+              ...(['A','B','C','D'] as SimId[]).map(s => ({
+                runId,
+                simId: s,
+                champion: (next[s] as NarrativeResult).champion,
+              })),
+            ]);
+          }
           return next;
         });
       } else if (msg.type === 'error') {
@@ -244,12 +257,15 @@ export default function App() {
     setRunId(prev => prev + 1);
   }
 
+  const historyCount = Math.ceil(history.length / 4);
+
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: 'A', label: 'Sim A' },
     { id: 'B', label: 'Sim B' },
     { id: 'C', label: 'Sim C' },
     { id: 'D', label: 'Sim D' },
     { id: 'montecarlo', label: 'Monte Carlo' },
+    { id: 'history', label: historyCount > 0 ? `History (${historyCount})` : 'History' },
   ];
 
   const completedCount = ['A','B','C','D'].filter(s => sims[s as SimId] !== null).length;
@@ -318,6 +334,8 @@ export default function App() {
       <main className="app-main">
         {activeTab === 'montecarlo' ? (
           <MonteCarloPanel key={runId} autoRun />
+        ) : activeTab === 'history' ? (
+          <HistoryPanel history={history} />
         ) : (
           <NarrativeTab
             result={sims[activeTab as SimId]}

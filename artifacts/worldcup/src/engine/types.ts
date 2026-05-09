@@ -79,7 +79,7 @@ export interface NarrativeResult extends TournamentResult {
   goldenBoot: { player: string; teamId: string; goals: number };
   cinderellaTeam: string;
   biggestUpset: string;
-  starPlayerOut: { player: string; reason: 'suspension' | 'injury'; matchId: number };
+  starPlayerOut: { player: string; teamId: string; reason: 'suspension' | 'injury'; matchId: number };
 }
 
 export interface PathConfidenceScore {

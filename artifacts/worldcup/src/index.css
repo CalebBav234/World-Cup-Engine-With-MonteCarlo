@@ -1047,6 +1047,243 @@ html, body {
 }
 
 /* =============================================
+   HISTORY PANEL
+   ============================================= */
+
+.history-panel {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.history-empty-icon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.history-empty-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.history-empty-sub {
+  font-size: 14px;
+  color: var(--text-3);
+  max-width: 360px;
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.history-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.history-meta {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.history-runs-badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+
+.history-table-wrap {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.history-table thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-3);
+}
+
+.history-table .col-bar {
+  width: 200px;
+}
+
+.history-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.history-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.history-table tbody tr:hover {
+  background: var(--bg-3);
+}
+
+.history-table tbody tr.history-leader {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.history-table tbody tr.history-leader:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.history-table td {
+  padding: 10px 14px;
+  color: var(--text);
+}
+
+.history-table .rank-cell {
+  font-size: 14px;
+  width: 40px;
+  text-align: center;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.history-table .wins-cell {
+  font-weight: 700;
+  color: var(--gold-light);
+  font-size: 15px;
+  font-family: var(--mono);
+}
+
+.history-table .pct-cell {
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.history-table .last-cell {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.bar-cell {
+  padding-right: 20px !important;
+}
+
+.freq-bar-track {
+  height: 6px;
+  background: var(--bg-4);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.freq-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #60a5fa);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.history-leader .freq-bar-fill {
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+}
+
+.history-log {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.history-log-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+  margin: 0 0 14px;
+}
+
+.history-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.history-log-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.history-log-list::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 2px;
+}
+
+.history-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  background: var(--bg-3);
+}
+
+.log-run {
+  font-weight: 700;
+  color: var(--text-3);
+  min-width: 44px;
+  font-family: var(--mono);
+}
+
+.log-sim {
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.log-champ {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* =============================================
    RESPONSIVE
    ============================================= */
 
